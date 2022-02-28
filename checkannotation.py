@@ -62,6 +62,10 @@ class Check_Annotation:
     #    if recurs; defines many local function which use it parameters.  
     def check(self,param,annot,value,check_history=''):
         
+        # Not doing anything with check_history?
+        
+        WRONG_TYPE_MSG = f'{param} failed annotation check(wrong type): value = {value}\n\t'
+        
         def check_none():
             if annot == None:
                 return True
@@ -84,8 +88,14 @@ class Check_Annotation:
                 return True
         
         def check_dict():
-            pass
-        
+            if not isinstance(value, dict):
+                assert False, f'{WRONG_TYPE_MSG}was type {type(value)} ...should be type dict'
+            elif len(annot) > 1:
+                assert False, f'{param} annotaions inconsistency: dict should have 1 item but had {len(annot)}\n\tannotation = {annot}'
+            else:
+                for key in value:
+                    self.check(param, list(annot)[0], key, check_history=f'dict key check: {list(annot)[0]}')
+                    self.check(param, list(annot.values())[0], value[key], check_history=f'dict value check: {list(annot.values())[0]}')
         def check_set_or_frozenset(s_or_f):
             pass
         
@@ -145,7 +155,7 @@ class Check_Annotation:
             print(annotations)
             # For each detected annotation, check it using its argument's value
             for param in annotations.keys():
-                check()
+                self.check()
             # Compute/remember the value of the decorated function
             
             # If 'return' is in the annotation, check it
