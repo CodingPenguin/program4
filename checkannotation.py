@@ -1,3 +1,8 @@
+# Submitter: bryanttp(Phan, Bryant)
+# Partner  : dannyhn5(Nguyen, Danny)
+# We certify that we worked cooperatively on this programming
+#   assignment, according to the rules for pair programming
+
 from goody import type_as_str
 import inspect
 
@@ -79,7 +84,9 @@ class Check_Annotation:
             assert False, f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be {annot}'
         
         def check_list_or_tuple(l_or_t):
-            if len(annot) > len(value):
+            if (l_or_t == 'list' and type(value) is not list) or (l_or_t == 'tuple' and type(value) is not tuple):
+                assert False, f'{param} failed annotation check(wrong type): value = {value} was type set ...should be type {type_as_str(annot)}'
+            elif len(annot) > len(value):
                 assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}'
             elif len(annot) == 1:
                 for i, x in enumerate(value):
@@ -101,34 +108,36 @@ class Check_Annotation:
                     self.check(param, list(annot.values())[0], value[key], check_history + f'dict value check: {list(annot.values())[0]}')
                 return True
         def check_set_or_frozenset(s_or_f):
-            if type(value) not in (set, frozenset):
+            if (s_or_f == 'set' and type(value) is not set) or (s_or_f == 'frozenset' and type(value) is not frozenset):
                 assert False, _WRONG_TYPE_MSG()
             elif len(annot) > 1:
                 assert False, _WRONG_ANNOT_LEN_MSG()
+            elif len(annot) > 1 and len(annot) != len(value):
+                assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}'
             else:
                 for elem in value:
-                    self.check(param, annot[0], elem, check_history + f'{s_or_f} value check: {annot[0]}')
+                    self.check(param, list(annot)[0], elem, check_history + f'{s_or_f} value check: {list(annot)[0]}')
                 return True
                 
-        if type(annot) is None:
+        if type(annot) == type(None):
             check_none()
         
         elif type(annot) is type:
             gen_check()
         
-        elif type(annot) is list:
+        elif type(annot) == list:
             check_list_or_tuple('list')
             
-        elif type(annot) is tuple:
+        elif type(annot) == tuple:
             check_list_or_tuple('tuple') 
             
         elif isinstance(annot, dict):
             check_dict()
             
-        elif type(annot) is set:
+        elif type(annot) == set:
             check_set_or_frozenset('set')
         
-        elif type(annot) is frozenset:
+        elif type(annot) == frozenset:
             check_set_or_frozenset('frozenset')
         
         
@@ -167,7 +176,8 @@ class Check_Annotation:
             print(annotations)
             # For each detected annotation, check it using its argument's value
             for param in annotations.keys():
-                self.check(param, annotations[param], param_args_dict[param])
+                if param in param_args_dict:
+                    self.check(param, annotations[param], param_args_dict[param])
             
             # Compute/remember the value of the decorated function
             return_value = self._f(**param_args_dict)
@@ -183,10 +193,10 @@ class Check_Annotation:
             
         # On first AssertionError, print the source lines of the function and reraise 
         except AssertionError as e:
-            print(80*'-')
-            for l in inspect.getsourcelines(self._f)[0]: # ignore starting line #
-                print(l.rstrip())
-            print(80*'-')
+            # print(80*'-')
+            # for l in inspect.getsourcelines(self._f)[0]: # ignore starting line #
+            #     print(l.rstrip())
+            # print(80*'-')
             raise e
 
 
