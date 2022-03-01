@@ -67,7 +67,6 @@ class Check_Annotation:
     #    if recurs; defines many local function which use it parameters.  
     def check(self,param,annot,value,check_history=''):
         
-        # Not doing anything with check_history?
         
         def _WRONG_TYPE_MSG(): 
             return f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be type {type_as_str(annot)}'
@@ -139,7 +138,26 @@ class Check_Annotation:
                 assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}'
             except BaseException as e:
                 assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}'
-                
+            return True 
+        
+        def check_eval_str(self):
+            # if type(value) == str:
+            #     exec(f'self.{param} = \'{value}\'')
+            # else:
+            #     exec(f'self.{param} = {value}')
+            try:
+                for key in self.param_args_dict:
+                    if type(self.param_args_dict[key]) == str:
+                        exec(f'{key} = \'{self.param_args_dict[key]}\'')
+                    else:
+                        exec(f'{key} = {self.param_args_dict[key]}')
+                if eval(annot) == False:
+                    assert False 
+                return True
+            except NameError:
+                return 
+            except BaseException:
+                assert False
             
         if type(annot) == type(None):
             check_none()
@@ -164,6 +182,9 @@ class Check_Annotation:
             
         elif inspect.isfunction(annot):
             check_func()
+            
+        elif type(annot) == str:
+            check_eval_str(self)
             
         else:
             check_other()
@@ -199,21 +220,21 @@ class Check_Annotation:
         
         
         try:
-            annotations = self._f.__annotations__
-            param_args_dict = param_arg_bindings()
+            self.annotations = self._f.__annotations__
+            self.param_args_dict = param_arg_bindings()
             # print(annotations)
             # For each detected annotation, check it using its argument's value
-            for param in annotations.keys():
-                if param in param_args_dict:
-                    self.check(param, annotations[param], param_args_dict[param])
+            for param in self.annotations.keys():
+                if param in self.param_args_dict:
+                    self.check(param, self.annotations[param], self.param_args_dict[param])
             
             # Compute/remember the value of the decorated function
-            return_value = self._f(**param_args_dict)
+            return_value = self._f(**self.param_args_dict)
             
             # If 'return' is in the annotation, check it
-            param_args_dict['_return'] = return_value
-            if 'return' in annotations:
-                self.check('return', annotations['return'], return_value)
+            self.param_args_dict['_return'] = return_value
+            if 'return' in self.annotations:
+                self.check('return', self.annotations['return'], return_value)
             
             
             # Return the decorated answer
