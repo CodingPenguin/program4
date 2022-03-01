@@ -64,7 +64,7 @@ class Check_Annotation:
         
         # Not doing anything with check_history?
         
-        WRONG_TYPE_MSG = f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type(value)} ...should be type {type(annot)}'
+        WRONG_TYPE_MSG = f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be type {type_as_str(annot)}'
         WRONG_ANNOT_LEN_MSG = f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}'
         
         def check_none():
@@ -105,7 +105,7 @@ class Check_Annotation:
                 assert False, WRONG_ANNOT_LEN_MSG
             else:
                 for elem in value:
-                    self.check(param, annot[0], elem, check_history + f'set value check: {annot[0]}')
+                    self.check(param, annot[0], elem, check_history + f'{s_or_f} value check: {annot[0]}')
                 return True
                 
         if type(annot) is None:
@@ -151,35 +151,41 @@ class Check_Annotation:
                 if not (param.name in bound_f_signature.arguments):
                     bound_f_signature.arguments[param.name] = param.default
             return bound_f_signature.arguments
-        print(param_arg_bindings)
+        print(param_arg_bindings())
         # If annotation checking is turned off at the class or function level
         #   just return the result of calling the decorated function
         # Otherwise do all the annotation checking
-        if self._checking_on and Check_Annotation.checking_on:
-            return self._f(param_arg_bindings())
+        if not self._checking_on or not Check_Annotation.checking_on:
+            return self._f(**param_arg_bindings())
         
         
         try:
             annotations = self._f.__annotations__
+            param_args_dict = param_arg_bindings()
             print(annotations)
             # For each detected annotation, check it using its argument's value
             for param in annotations.keys():
-                self.check()
+                self.check(param, annotations[param], param_args_dict[param])
+            
             # Compute/remember the value of the decorated function
+            return_value = self._f(**param_args_dict)
             
             # If 'return' is in the annotation, check it
+            param_args_dict['_return'] = return_value
+            if 'return' in annotations:
+                self.check('return', annotations['return'], return_value)
+            
             
             # Return the decorated answer
-            
-            pass #remove after adding real code in try/except
+            return return_value
             
         # On first AssertionError, print the source lines of the function and reraise 
-        except AssertionError:
+        except AssertionError as e:
             print(80*'-')
             for l in inspect.getsourcelines(self._f)[0]: # ignore starting line #
                 print(l.rstrip())
             print(80*'-')
-            raise
+            raise e
 
 
 
