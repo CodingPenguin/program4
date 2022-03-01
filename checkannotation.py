@@ -64,8 +64,10 @@ class Check_Annotation:
         
         # Not doing anything with check_history?
         
-        WRONG_TYPE_MSG = f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be type {type_as_str(annot)}'
-        WRONG_ANNOT_LEN_MSG = f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}'
+        def _WRONG_TYPE_MSG(): 
+            return f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be type {type_as_str(annot)}'
+        def _WRONG_ANNOT_LEN_MSG(): 
+            return f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}'
         
         def check_none():
             if annot == None:
@@ -90,9 +92,9 @@ class Check_Annotation:
         
         def check_dict():
             if not isinstance(value, dict):
-                assert False, WRONG_TYPE_MSG
+                assert False, _WRONG_TYPE_MSG()
             elif len(annot) > 1:
-                assert False, WRONG_ANNOT_LEN_MSG
+                assert False, _WRONG_ANNOT_LEN_MSG()
             else:
                 for key in value:
                     self.check(param, list(annot)[0], key, check_history=f'dict key check: {list(annot)[0]}')
@@ -100,9 +102,9 @@ class Check_Annotation:
                 return True
         def check_set_or_frozenset(s_or_f):
             if type(value) not in (set, frozenset):
-                assert False, WRONG_TYPE_MSG
+                assert False, _WRONG_TYPE_MSG()
             elif len(annot) > 1:
-                assert False, WRONG_ANNOT_LEN_MSG
+                assert False, _WRONG_ANNOT_LEN_MSG()
             else:
                 for elem in value:
                     self.check(param, annot[0], elem, check_history + f'{s_or_f} value check: {annot[0]}')
@@ -196,11 +198,11 @@ if __name__ == '__main__':
     def f(x:int): pass
     f = Check_Annotation(f)
     f(3)
-    f('a')
+    # f('a')
            
     #driver tests
     import driver
-    driver.default_file_name = 'bscp4S22.txt'
+    driver.default_file_name = 'bscp4W22.txt'
 #     driver.default_show_exception= True
 #     driver.default_show_exception_message= True
 #     driver.default_show_traceback= True
