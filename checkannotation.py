@@ -70,7 +70,7 @@ class Check_Annotation:
             return f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}'
         
         def check_none():
-            if annot == None:
+            if annot == None: # Do we even need this check? Since line 116 is already checking if annot is None?
                 return True
             
         def gen_check():
@@ -79,7 +79,9 @@ class Check_Annotation:
             assert False, f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be {annot}'
         
         def check_list_or_tuple(l_or_t):
-            if len(annot) > len(value):
+            if not type(value) not in (type(list), type(tuple)):
+                assert False, _WRONG_TYPE_MSG()
+            elif len(annot) > len(value):
                 assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}'
             elif len(annot) == 1:
                 for i, x in enumerate(value):
@@ -100,6 +102,7 @@ class Check_Annotation:
                     self.check(param, list(annot)[0], key, check_history=f'dict key check: {list(annot)[0]}')
                     self.check(param, list(annot.values())[0], value[key], check_history + f'dict value check: {list(annot.values())[0]}')
                 return True
+            
         def check_set_or_frozenset(s_or_f):
             if type(value) not in (set, frozenset):
                 assert False, _WRONG_TYPE_MSG()
