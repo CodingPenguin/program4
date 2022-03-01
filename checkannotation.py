@@ -62,6 +62,11 @@ class Check_Annotation:
     #    if recurs; defines many local function which use it parameters.  
     def check(self,param,annot,value,check_history=''):
         
+        # Not doing anything with check_history?
+        
+        WRONG_TYPE_MSG = f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type(value)} ...should be type {type(annot)}'
+        WRONG_ANNOT_LEN_MSG = f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}'
+        
         def check_none():
             if annot == None:
                 return True
@@ -84,11 +89,25 @@ class Check_Annotation:
                 return True
         
         def check_dict():
-            pass
-        
+            if not isinstance(value, dict):
+                assert False, WRONG_TYPE_MSG
+            elif len(annot) > 1:
+                assert False, WRONG_ANNOT_LEN_MSG
+            else:
+                for key in value:
+                    self.check(param, list(annot)[0], key, check_history=f'dict key check: {list(annot)[0]}')
+                    self.check(param, list(annot.values())[0], value[key], check_history + f'dict value check: {list(annot.values())[0]}')
+                return True
         def check_set_or_frozenset(s_or_f):
-            pass
-        
+            if type(value) not in (set, frozenset):
+                assert False, WRONG_TYPE_MSG
+            elif len(annot) > 1:
+                assert False, WRONG_ANNOT_LEN_MSG
+            else:
+                for elem in value:
+                    self.check(param, annot[0], elem, check_history + f'set value check: {annot[0]}')
+                return True
+                
         if type(annot) is None:
             check_none()
         
@@ -101,7 +120,7 @@ class Check_Annotation:
         elif type(annot) is tuple:
             check_list_or_tuple('tuple') 
             
-        elif type(annot) is dict:
+        elif isinstance(annot, dict):
             check_dict()
             
         elif type(annot) is set:
@@ -145,7 +164,7 @@ class Check_Annotation:
             print(annotations)
             # For each detected annotation, check it using its argument's value
             for param in annotations.keys():
-                check()
+                self.check()
             # Compute/remember the value of the decorated function
             
             # If 'return' is in the annotation, check it
