@@ -118,7 +118,29 @@ class Check_Annotation:
                 for elem in value:
                     self.check(param, list(annot)[0], elem, check_history + f'{s_or_f} value check: {list(annot)[0]}')
                 return True
+            
+        def check_func():
+            annot_sig = inspect.signature(annot)
+            if len(annot_sig.parameters.values()) != 1:
+                assert False, f'{param} annotation inconsistency: predicate should have 1 parameter but had {annot_sig.parameters.values()}\n\tpredicate = {annot}'
+            try: 
+                if annot(value) == False:
+                    assert False, f'{param} failed annotation check: value = {value}\n\tpredicate = {annot}'
+            except BaseException as e:
+                assert False, f'{param} annotation predicate({annot}) raised exception\n\texception = {type_as_str(e)}:{str(e)}\n{check_history}' 
+            return True
                 
+        def check_other():
+            if not hasattr(type(annot), '__check_annotation__'):
+                assert False, f'{param} annotation undecipherable: {annot}'
+            try:
+                annot.__check_annotation__(self.check, param, value, check_history)
+            except AssertionError as e:
+                assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}'
+            except BaseException as e:
+                assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}'
+                
+            
         if type(annot) == type(None):
             check_none()
         
@@ -139,6 +161,12 @@ class Check_Annotation:
         
         elif type(annot) == frozenset:
             check_set_or_frozenset('frozenset')
+            
+        elif inspect.isfunction(annot):
+            check_func()
+            
+        else:
+            check_other()
         
         
         # Define local functions for checking, list/tuple, dict, set/frozenset,
@@ -162,7 +190,7 @@ class Check_Annotation:
                 if not (param.name in bound_f_signature.arguments):
                     bound_f_signature.arguments[param.name] = param.default
             return bound_f_signature.arguments
-        print(param_arg_bindings())
+        # print(param_arg_bindings())
         # If annotation checking is turned off at the class or function level
         #   just return the result of calling the decorated function
         # Otherwise do all the annotation checking
@@ -173,7 +201,7 @@ class Check_Annotation:
         try:
             annotations = self._f.__annotations__
             param_args_dict = param_arg_bindings()
-            print(annotations)
+            # print(annotations)
             # For each detected annotation, check it using its argument's value
             for param in annotations.keys():
                 if param in param_args_dict:
