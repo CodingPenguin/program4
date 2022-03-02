@@ -262,7 +262,7 @@ if __name__ == '__main__':
            
     #driver tests
     import driver
-    driver.default_file_name = 'bscp4W22.txt'
+    driver.default_file_name = 'bscp4SF1.txt'
 #     driver.default_show_exception= True
 #     driver.default_show_exception_message= True
 #     driver.default_show_traceback= True
