@@ -68,10 +68,10 @@ class Check_Annotation:
     def check(self,param,annot,value,check_history=''):
         
         
-        def _WRONG_TYPE_MSG(): 
-            return f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be type {type_as_str(annot)}'
-        def _WRONG_ANNOT_LEN_MSG(): 
-            return f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}'
+        def _WRONG_TYPE_MSG(ch=''): 
+            return f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be type {type_as_str(annot)}\n{ch}'
+        def _WRONG_ANNOT_LEN_MSG(ch=''): 
+            return f'{param} annotaions inconsistency: {type(annot)} should have 1 item but had {len(annot)}\n\tannotation = {annot}\n{ch}'
         
         def check_none():
             if annot == None:
@@ -80,51 +80,51 @@ class Check_Annotation:
         def gen_check():
             if isinstance(value, annot):
                 return True
-            assert False, f'{param} failed annotation check(wrong type): value = {value}\n\twas type {type_as_str(value)} ...should be {annot}'
+            assert False, _WRONG_TYPE_MSG(check_history)
         
         def check_list_or_tuple(l_or_t):
             if (l_or_t == 'list' and type(value) is not list) or (l_or_t == 'tuple' and type(value) is not tuple):
-                assert False, f'{param} failed annotation check(wrong type): value = {value} was type set ...should be type {type_as_str(annot)}'
+                assert False, _WRONG_TYPE_MSG(check_history)
             elif len(annot) > len(value):
-                assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}'
+                assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}\n{check_history}'
             elif len(annot) == 1:
                 for i, x in enumerate(value):
-                    self.check(param, annot[0], x, check_history=f'{l_or_t}[{i}] check: {annot}')
+                    self.check(param, annot[0], x, check_history + f'{l_or_t}[{i}] check: {annot}\n')
                 return True
             elif len(annot) == len(value):
                 for i in range(len(value)):
-                    self.check(param, annot[i], value[i], check_history=f'{l_or_t}[{i}] check: {annot[i]}')
+                    self.check(param, annot[i], value[i], check_history + f'{l_or_t}[{i}] check: {annot[i]}\n')
                 return True
         
         def check_dict():
             if not isinstance(value, dict):
-                assert False, _WRONG_TYPE_MSG()
+                assert False, _WRONG_TYPE_MSG(check_history)
             elif len(annot) > 1:
-                assert False, _WRONG_ANNOT_LEN_MSG()
+                assert False, _WRONG_ANNOT_LEN_MSG(check_history)
             else:
                 for key in value:
-                    self.check(param, list(annot)[0], key, check_history=f'dict key check: {list(annot)[0]}')
-                    self.check(param, list(annot.values())[0], value[key], check_history + f'dict value check: {list(annot.values())[0]}')
+                    self.check(param, list(annot)[0], key, check_history + f'{type_as_str(annot)} key check: {list(annot)[0]}\n')
+                    self.check(param, list(annot.values())[0], value[key], check_history + f'{type_as_str(annot)} value check: {list(annot.values())[0]}\n')
                 return True
         def check_set_or_frozenset(s_or_f):
             if (s_or_f == 'set' and type(value) is not set) or (s_or_f == 'frozenset' and type(value) is not frozenset):
-                assert False, _WRONG_TYPE_MSG()
+                assert False, _WRONG_TYPE_MSG(check_history)
             elif len(annot) > 1:
-                assert False, _WRONG_ANNOT_LEN_MSG()
+                assert False, _WRONG_ANNOT_LEN_MSG(check_history)
             elif len(annot) > 1 and len(annot) != len(value):
-                assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}'
+                assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}\n{check_history}'
             else:
                 for elem in value:
-                    self.check(param, list(annot)[0], elem, check_history + f'{s_or_f} value check: {list(annot)[0]}')
+                    self.check(param, list(annot)[0], elem, check_history + f'{s_or_f} value check: {list(annot)[0]}\n')
                 return True
             
         def check_func():
             annot_sig = inspect.signature(annot)
             if len(annot_sig.parameters.values()) != 1:
-                assert False, f'{param} annotation inconsistency: predicate should have 1 parameter but had {annot_sig.parameters.values()}\n\tpredicate = {annot}'
+                assert False, f'{param} annotation inconsistency: predicate should have 1 parameter but had {annot_sig.parameters.values()}\n\tpredicate = {annot}\n{check_history}'
             try: 
                 if annot(value) == False:
-                    assert False, f'{param} failed annotation check: value = {value}\n\tpredicate = {annot}'
+                    assert False, f'{param} failed annotation check: value = {value}\n\tpredicate = {annot}\n{check_history}'
             except BaseException as e:
                 assert False, f'{param} annotation predicate({annot}) raised exception\n\texception = {type_as_str(e)}:{str(e)}\n{check_history}' 
             return True
@@ -133,18 +133,15 @@ class Check_Annotation:
             if not hasattr(type(annot), '__check_annotation__'):
                 assert False, f'{param} annotation undecipherable: {annot}'
             try:
-                annot.__check_annotation__(self.check, param, value, check_history)
+                annot.__check_annotation__(self.check, param, value, check_history + f'{type_as_str(annot)} value check: {type_as_str(annot)}\n')
             except AssertionError as e:
-                assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}'
+                assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}\n{check_history}'
             except BaseException as e:
-                assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}'
+                assert False, f'{str(e)}\n{type_as_str(annot)} value check: {type_as_str(annot)}\n{check_history}'
             return True 
         
         def check_eval_str(self):
-            # if type(value) == str:
-            #     exec(f'self.{param} = \'{value}\'')
-            # else:
-            #     exec(f'self.{param} = {value}')
+            # implement with _return
             try:
                 for key in self.param_args_dict:
                     if type(self.param_args_dict[key]) == str:
@@ -152,12 +149,13 @@ class Check_Annotation:
                     else:
                         exec(f'{key} = {self.param_args_dict[key]}')
                 if eval(annot) == False:
-                    assert False 
+                    thing = ', '.join([f'{arg}->{self.param_args_dict[arg]}' for arg in self.param_args_dict])
+                    assert False, f'{param} failed annotation check(str predicate: {annot}) args for evaluation: {thing}'
                 return True
-            except NameError:
-                return 
-            except BaseException:
-                assert False
+            except AssertionError as e:
+                raise e
+            except BaseException as e:
+                assert False, f'{param} annotation check(str predicate: {annot}) raised exception exception = {e}: {str(e)}'
             
         if type(annot) == type(None):
             check_none()
@@ -257,6 +255,9 @@ if __name__ == '__main__':
     def f(x:int): pass
     f = Check_Annotation(f)
     f(3)
+    def f(x,y : 'x>y'): pass
+    f = Check_Annotation(f)
+    f(1,2)
     # f('a')
            
     #driver tests
