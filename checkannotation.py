@@ -89,11 +89,11 @@ class Check_Annotation:
                 assert False, f'{param} failed annotation check (wrong type): value = {value}\n\tannotation had {len(annot)} elements{annot}'
             elif len(annot) == 1:
                 for i, x in enumerate(value):
-                    self.check(param, annot[0], x, check_history=f'{l_or_t}[{i}] check: {annot}')
+                    self.check(param, annot[0], x, check_history + f'{l_or_t}[{i}] check: {annot}')
                 return True
             elif len(annot) == len(value):
                 for i in range(len(value)):
-                    self.check(param, annot[i], value[i], check_history=f'{l_or_t}[{i}] check: {annot[i]}')
+                    self.check(param, annot[i], value[i], check_history + f'{l_or_t}[{i}] check: {annot[i]}')
                 return True
         
         def check_dict():
@@ -261,7 +261,7 @@ if __name__ == '__main__':
            
     #driver tests
     import driver
-    driver.default_file_name = 'bscp4W22.txt'
+    driver.default_file_name = 'bscp4SF1.txt'
 #     driver.default_show_exception= True
 #     driver.default_show_exception_message= True
 #     driver.default_show_traceback= True
